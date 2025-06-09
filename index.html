@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>真实Lottie动画爬取器</title>
+  <style>
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
+      
+      body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          padding: 20px;
+      }
+      
+      .container {
+          max-width: 1200px;
+          margin: 0 auto;
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+          overflow: hidden;
+      }
+      
+      .header {
+          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+          color: white;
+          padding: 30px;
+          text-align: center;
+      }
+      
+      .header h1 {
+          font-size: 2.5em;
+          margin-bottom: 10px;
+      }
+      
+      .method-tabs {
+          display: flex;
+          background: #f8f9fa;
+          border-bottom: 1px solid #dee2e6;
+      }
+      
+      .tab {
+          flex: 1;
+          padding: 15px;
+          text-align: center;
+          cursor: pointer;
+          border: none;
+          background: transparent;
+          font-weight: 600;
+          transition: all 0.3s;
+      }
+      
+      .tab.active {
+          background: white;
+          color: #ff6b6b;
+          border-bottom: 3px solid #ff6b6b;
+      }
+      
+      .tab-content {
+          padding: 30px;
+      }
+      
+      .method-section {
+          display: none;
+      }
+      
+      .method-section.active {
+          display: block;
+      }
+      
+      .input-group {
+          margin-bottom: 20px;
+      }
+      
+      .input-group label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 600;
+          color: #333;
+      }
+      
+      .input-group input, .input-group textarea {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e1e5e9;
+          border-radius: 8px;
+          font-size: 16px;
+      }
+      
+      .input-group textarea {
+          height: 200px;
+          font-family: monospace;
+          resize: vertical;
+      }
+      
+      .btn {
+          padding: 12px 24px;
+          border: none;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+          margin-right: 10px;
+          margin-bottom: 10px;
+      }
+      
+      .btn-primary {
+          background: #ff6b6b;
+          color: white;
+      }
+      
+      .btn-primary:hover {
+          background: #ee5a24;
+          transform: translateY(-2px);
+      }
+      
+      .btn-success {
+          background: #28a745;
+          color: white;
+      }
+      
+      .btn-secondary {
+          background: #6c757d;
+          color: white;
+      }
+      
+      .results {
+          margin-top: 30px;
+          padding: 20px;
+          background: #f8f9fa;
+          border-radius: 12px;
+      }
+      
+      .lottie-item {
+          background: white;
+          padding: 15px;
+          margin-bottom: 15px;
+          border-radius: 8px;
+          border-left: 4px solid #ff6b6b;
+      }
+      
+      .lottie-item h4 {
+          margin-bottom: 10px;
+          color: #333;
+      }
+      
+      .lottie-url {
+          font-family: monospace;
+          font-size: 12px;
+          color: #666;
+          background: #f1f3f4;
+          padding: 5px;
+          border-radius: 4px;
+          word-break: break-all;
+          margin-bottom: 10px;
+      }
+      
+      .preview-container {
+          width: 200px;
+          height: 200px;
+          border: 2px dashed #ddd;
+          margin: 10px 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fafafa;
+      }
+      
+      .status {
+          padding: 10px 15px;
+          border-radius: 8px;
+          margin-bottom: 15px;
+          font-weight: 600;
+      }
+      
+      .status.success { background: #d4edda; color: #155724; }
+      .status.error { background: #f8d7da; color: #721c24; }
+      .status.info { background: #d1ecf1; color: #0c5460; }
+      .status.warning { background: #fff3cd; color: #856404; }
+      
+      .code-example {
+          background: #2d3748;
+          color: #e2e8f0;
+          padding: 20px;
+          border-radius: 8px;
+          font-family: monospace;
+          font-size: 14px;
+          overflow-x: auto;
+          margin: 15px 0;
+      }
+      
+      .file-drop {
+          border: 2px dashed #ccc;
+          border-radius: 8px;
+          padding: 40px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s;
+      }
+      
+      .file-drop:hover {
+          border-color: #ff6b6b;
+          background: #fff5f5;
+      }
+      
+      .file-drop.dragover {
+          border-color: #ff6b6b;
+          background: #fff5f5;
+      }
+  </style>
+</head>
+<body>
+  <div class="container">
+      <div class="header">
+          <h1>🎯 真实Lottie爬取器</h1>
+          <p>多种方式获取和处理Lottie动画文件</p>
+      </div>
+      
+      <div class="method-tabs">
+          <button class="tab active" onclick="switchTab('proxy')">🌐 代理爬取</button>
+          <button class="tab" onclick="switchTab('paste')">📋 粘贴HTML</button>
+          <button class="tab" onclick="switchTab('upload')">📁 上传文件</button>
+          <button class="tab" onclick="switchTab('bookmarklet')">🔖 书签工具</button>
+      </div>
+      
+      <div class="tab-content">
+          <!-- 代理爬取 -->
+          <div class="method-section active" id="proxy">
+              <h3>🌐 通过代理服务爬取</h3>
+              <div class="status warning">
+                  <strong>注意：</strong> 使用第三方代理服务，请注意隐私和安全
+              </div>
+              
+              <div class="input-group">
+                  <label>目标URL:</label>
+                  <input type="url" id="proxyUrl" placeholder="https://t.me/nft/EasterEgg-58303" value="https://t.me/nft/EasterEgg-58303">
+              </div>
+              
+              <div class="input-group">
+                  <label>代理服务:</label>
+                  <select id="proxyService">
+                      <option value="allorigins">AllOrigins (推荐)</option>
+                      <option value="corsproxy">CORS Proxy</option>
+                      <option value="thingproxy">ThingProxy</option>
+                      <option value="custom">自定义代理</option>
+                  </select>
+              </div>
+              
+              <button class="btn btn-primary" onclick="scrapeWithProxy()">🚀 开始爬取</button>
+              <button class="btn btn-secondary" onclick="testConnection()">🔗 测试连接</button>
+          </div>
+          
+          <!-- 粘贴HTML -->
+          <div class="method-section" id="paste">
+              <h3>📋 粘贴HTML源码</h3>
+              <div class="status info">
+                  <strong>使用方法：</strong> 
+                  1. 打开目标页面，按F12打开开发者工具<br>
+                  2. 右键点击&lt;html&gt;标签，选择"Copy outerHTML"<br>
+                  3. 粘贴到下面的文本框中
+              </div>
+              
+              <div class="input-group">
+                  <label>HTML源码:</label>
+                  <textarea id="htmlContent" placeholder="粘贴完整的HTML源码..."></textarea>
+              </div>
+              
+              <button class="btn btn-primary" onclick="parseHTML()">🔍 解析HTML</button>
+              <button class="btn btn-secondary" onclick="document.getElementById('htmlContent').value = ''">🗑️ 清空</button>
+          </div>
+          
+          <!-- 上传文件 -->
+          <div class="method-section" id="upload">
+              <h3>📁 上传HTML文件</h3>
+              
+              <div class="file-drop" id="fileDrop">
+                  <div>📁</div>
+                  <p>拖拽HTML文件到这里，或点击选择文件</p>
+                  <input type="file" id="fileInput" accept=".html,.htm" style="display: none;">
+              </div>
+              
+              <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📂 选择文件</button>
+          </div>
+          
+          <!-- 书签工具 -->
+          <div class="method-section" id="bookmarklet">
+              <h3>🔖 浏览器书签工具</h3>
+              <div class="status success">
+                  <strong>最佳方案！</strong> 直接在目标页面运行，无跨域限制
+              </div>
+              
+              <p><strong>使用步骤：</strong></p>
+              <ol style="margin: 15px 0; padding-left: 20px;">
+                  <li>复制下面的代码</li>
+                  <li>创建新书签，将代码粘贴为书签URL</li>
+                  <li>在目标页面点击书签运行</li>
+              </ol>
+              
+              <div class="code-example" id="bookmarkletCode">
+javascript:(function(){
+  const lotties = [];
+  
+  // 查找所有可能的Lottie动画
+  function findLotties() {
+      // 1. 查找lottie-web实例
+      if (window.lottie && window.lottie.getRegisteredAnimations) {
+          window.lottie.getRegisteredAnimations().forEach(anim => {
+              if (anim.path) {
+                  lotties.push({
+                      type: 'lottie-web',
+                      url: anim.path,
+                      name: anim.name || 'Unnamed Animation'
+                  });
+              }
+          });
+      }
+      
+      // 2. 查找script标签中的JSON
+      document.querySelectorAll('script').forEach(script => {
+          const text = script.textContent;
+          if (text.includes('"v":') && text.includes('"layers":')) {
+              try {
+                  const matches = text.match(/\{[^{}]*"v":\s*"[^"]*"[^{}]*"layers":\s*\[[^\]]*\][^{}]*\}/g);
+                  matches?.forEach((match, i) => {
+                      lotties.push({
+                          type: 'inline-json',
+                          data: JSON.parse(match),
+                          name: `Inline Animation ${i + 1}`
+                      });
+                  });
+              } catch (e) {}
+          }
+      });
+      
+      // 3. 查找data属性
+      document.querySelectorAll('[data-lottie], [data-animation]').forEach((el, i) => {
+          const data = el.dataset.lottie || el.dataset.animation;
+          if (data) {
+              try {
+                  const parsed = JSON.parse(data);
+                  lotties.push({
+                      type: 'data-attribute',
+                      data: parsed,
+                      name: `Data Animation ${i + 1}`
+                  });
+              } catch (e) {
+                  if (data.startsWith('http')) {
+                      lotties.push({
+                          type: 'data-url',
+                          url: data,
+                          name: `Data URL ${i + 1}`
+                      });
+                  }
+              }
+          }
+      });
+      
+      // 4. 查找可能的JSON URL
+      const scripts = Array.from(document.querySelectorAll('script')).map(s => s.textContent).join(' ');
+      const urls = scripts.match(/https?:\/\/[^\s"']+\.json/g) || [];
+      urls.forEach((url, i) => {
+          if (!lotties.some(l => l.url === url)) {
+              lotties.push({
+                  type: 'json-url',
+                  url: url,
+                  name: `JSON URL ${i + 1}`
+              });
+          }
+      });
+  }
+  
+  findLotties();
+  
+  // 创建结果窗口
+  const resultWindow = window.open('', '_blank', 'width=800,height=600');
+  resultWindow.document.write(`
+      <html>
+      <head>
+          <title>Lottie爬取结果</title>
+          <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              .item { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 8px; }
+              .type { background: #007bff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+              .url { font-family: monospace; background: #f8f9fa; padding: 5px; border-radius: 4px; word-break: break-all; }
+              button { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 5px; }
+              button:hover { background: #218838; }
+              .json-preview { background: #2d3748; color: #e2e8f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 200px; overflow: auto; }
+          </style>
+      </head>
+      <body>
+          <h1>🎬 找到 ${lotties.length} 个Lottie动画</h1>
+          <p>来源页面: ${window.location.href}</p>
+          ${lotties.map((lottie, i) => `
+              <div class="item">
+                  <h3>${lottie.name} <span class="type">${lottie.type}</span></h3>
+                  ${lottie.url ? `<div class="url">${lottie.url}</div>` : ''}
+                  ${lottie.data ? `<div class="json-preview">${JSON.stringify(lottie.data, null, 2).substring(0, 500)}...</div>` : ''}
+                  <div>
+                      ${lottie.url ? `<button onclick="window.open('${lottie.url}')">📖 查看JSON</button>` : ''}
+                      <button onclick="downloadLottie(${i})">📥 下载</button>
+                      ${lottie.url ? `<button onclick="navigator.clipboard.writeText('${lottie.url}')">📋 复制链接</button>` : ''}
+                  </div>
+              </div>
+          `).join('')}
+          
+          <script>
+              const lotties = ${JSON.stringify(lotties)};
+              
+              function downloadLottie(index) {
+                  const lottie = lotties[index];
+                  let data, filename;
+                  
+                  if (lottie.data) {
+                      data = JSON.stringify(lottie.data, null, 2);
+                      filename = lottie.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+                  } else if (lottie.url) {
+                      fetch(lottie.url)
+                          .then(response => response.json())
+                          .then(json => {
+                              const data = JSON.stringify(json, null, 2);
+                              const filename = lottie.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+                              downloadFile(data, filename);
+                          })
+                          .catch(err => alert('下载失败: ' + err.message));
+                      return;
+                  }
+                  
+                  if (data) {
+                      downloadFile(data, filename);
+                  }
+              }
+              
+              function downloadFile(data, filename) {
+                  const blob = new Blob([data], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  a.click();
+                  URL.revokeObjectURL(url);
+              }
+          </script>
+      </body>
+      </html>
+  `);
+})();
+              </div>
+              
+              <button class="btn btn-success" onclick="copyBookmarklet()">📋 复制书签代码</button>
+              <button class="btn btn-primary" onclick="createBookmark()">🔖 创建书签</button>
+          </div>
+      </div>
+      
+      <div class="results" id="results" style="display: none;">
+          <h3>🎬 发现的Lottie动画</h3>
+          <div id="lottieList"></div>
+      </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  
+  <script>
+      let foundLotties = [];
+
+      // 切换标签
+      function switchTab(tabName) {
+          document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+          document.querySelectorAll('.method-section').forEach(section => section.classList.remove('active'));
+          
+          event.target.classList.add('active');
+          document.getElementById(tabName).classList.add('active');
+      }
+
+      // 显示状态
+      function showStatus(message, type = 'info') {
+          const status = document.createElement('div');
+          status.className = `status ${type}`;
+          status.innerHTML = message;
+          
+          const activeSection = document.querySelector('.method-section.active');
+          activeSection.insertBefore(status, activeSection.firstChild);
+          
+          setTimeout(() => status.remove(), 5000);
+      }
+
+      // 代理爬取
+      async function scrapeWithProxy() {
+          const url = document.getElementById('proxyUrl').value;
+          const service = document.getElementById('proxyService').value;
+          
+          if (!url) {
+              showStatus('请输入有效的URL', 'error');
+              return;
+          }
+          
+          let proxyUrl;
+          switch (service) {
+              case 'allorigins':
+                  proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                  break;
+              case 'corsproxy':
+                  proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                  break;
+              case 'thingproxy':
+                  proxyUrl = `https://thingproxy.freeboard.io/fetch/${url}`;
+                  break;
+              default:
+                  showStatus('请选择代理服务', 'error');
+                  return;
+          }
+          
+          try {
+              showStatus('正在通过代理获取页面内容...', 'info');
+              
+              const response = await fetch(proxyUrl);
+              const data = await response.json();
+              const html = data.contents || data;
+              
+              if (html) {
+                  parseLottieFromHTML(html);
+              } else {
+                  showStatus('无法获取页面内容', 'error');
+              }
+          } catch (error) {
+              showStatus(`代理请求失败: ${error.message}`, 'error');
+          }
+      }
+
+      // 测试连接
+      async function testConnection() {
+          const url = 'https://httpbin.org/get';
+          const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+          
+          try {
+              showStatus('正在测试代理连接...', 'info');
+              const response = await fetch(proxyUrl);
+              const data = await response.json();
+              
+              if (data.contents) {
+                  showStatus('代理连接正常！', 'success');
+              } else {
+                  showStatus('代理连接异常', 'error');
+              }
+          } catch (error) {
+              showStatus(`连接测试失败: ${error.message}`, 'error');
+          }
+      }
+
+      // 解析HTML
+      function parseHTML() {
+          const html = document.getElementById('htmlContent').value;
+          if (!html.trim()) {
+              showStatus('请粘贴HTML源码', 'error');
+              return;
+          }
+          
+          parseLottieFromHTML(html);
+      }
+
+      // 从HTML中解析Lottie
+      function parseLottieFromHTML(html) {
+          foundLotties = [];
+          
+          // 创建临时DOM
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          
+          // 1. 查找script标签中的JSON
+          doc.querySelectorAll('script').forEach((script, index) => {
+              const text = script.textContent;
+              
+              // 查找Lottie JSON结构
+              if (text.includes('"v":') && text.includes('"layers":')) {
+                  try {
+                      // 尝试提取JSON
+                      const jsonMatches = text.match(/\{[^{}]*"v":\s*"[^"]*"[^{}]*"layers":\s*\[[^\]]*\][^{}]*\}/g);
+                      jsonMatches?.forEach((match, i) => {
+                          try {
+                              const json = JSON.parse(match);
+                              foundLotties.push({
+                                  name: `Script Animation ${index}-${i}`,
+                                  type: 'inline-json',
+                                  data: json,
+                                  source: 'Script Tag'
+                              });
+                          } catch (e) {}
+                      });
+                  } catch (e) {}
+              }
+              
+              // 查找JSON URL
+              const urlMatches = text.match(/https?:\/\/[^\s"']+\.json/g);
+              urlMatches?.forEach((url, i) => {
+                  foundLotties.push({
+                      name: `JSON URL ${index}-${i}`,
+                      type: 'json-url',
+                      url: url,
+                      source: 'Script Tag'
+                  });
+              });
+          });
+          
+          // 2. 查找data属性
+          doc.querySelectorAll('[data-lottie], [data-animation], [data-src*=".json"]').forEach((el, index) => {
+              const lottieData = el.dataset.lottie || el.dataset.animation;
+              const srcData = el.dataset.src;
+              
+              if (lottieData) {
+                  try {
+                      const json = JSON.parse(lottieData);
+                      foundLotties.push({
+                          name: `Data Animation ${index}`,
+                          type: 'data-attribute',
+                          data: json,
+                          source: 'Data Attribute'
+                      });
+                  } catch (e) {
+                      if (lottieData.startsWith('http')) {
+                          foundLotties.push({
+                              name: `Data URL ${index}`,
+                              type: 'data-url',
+                              url: lottieData,
+                              source: 'Data Attribute'
+                          });
+                      }
+                  }
+              }
+              
+              if (srcData && srcData.includes('.json')) {
+                  foundLotties.push({
+                      name: `Data Src ${index}`,
+                      type: 'data-src',
+                      url: srcData,
+                      source: 'Data Src'
+                  });
+              }
+          });
+          
+          // 3. 查找可能的Lottie配置
+          const allText = html;
+          const configMatches = allText.match(/"animationData":\s*\{[^}]+\}/g);
+          configMatches?.forEach((match, i) => {
+              try {
+                  const config = JSON.parse(`{${match}}`);
+                  if (config.animationData) {
+                      foundLotties.push({
+                          name: `Config Animation ${i}`,
+                          type: 'config-data',
+                          data: config.animationData,
+                          source: 'Animation Config'
+                      });
+                  }
+              } catch (e) {}
+          });
+          
+          displayResults();
+          
+          if (foundLotties.length > 0) {
+              showStatus(`成功找到 ${foundLotties.length} 个Lottie动画！`, 'success');
+          } else {
+              showStatus('未找到Lottie动画文件', 'warning');
+          }
+      }
+
+      // 显示结果
+      function displayResults() {
+          const resultsDiv = document.getElementById('results');
+          const listDiv = document.getElementById('lottieList');
+          
+          listDiv.innerHTML = '';
+          
+          foundLotties.forEach((lottie, index) => {
+              const item = document.createElement('div');
+              item.className = 'lottie-item';
+              item.innerHTML = `
+                  <h4>${lottie.name} <span style="background: #007bff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">${lottie.type}</span></h4>
+                  <p style="color: #666; margin-bottom: 10px;">来源: ${lottie.source}</p>
+                  ${lottie.url ? `<div class="lottie-url">${lottie.url}</div>` : ''}
+                  ${lottie.data ? `<div style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 100px; overflow: auto;">${JSON.stringify(lottie.data, null, 2).substring(0, 200)}...</div>` : ''}
+                  <div style="margin-top: 10px;">
+                      <button class="btn btn-success" onclick="downloadLottie(${index})">📥 下载</button>
+                      ${lottie.url ? `<button class="btn btn-primary" onclick="previewLottie('${lottie.url}')">👁️ 预览</button>` : ''}
+                      ${lottie.url ? `<button class="btn btn-secondary" onclick="copyUrl('${lottie.url}')">📋 复制链接</button>` : ''}
+                  </div>
+              `;
+              listDiv.appendChild(item);
+          });
+          
+          resultsDiv.style.display = 'block';
+      }
+
+      // 下载Lottie
+      function downloadLottie(index) {
+          const lottie = foundLotties[index];
+          let data, filename;
+          
+          if (lottie.data) {
+              data = JSON.stringify(lottie.data, null, 2);
+              filename = lottie.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+              downloadFile(data, filename);
+          } else if (lottie.url) {
+              fetch(lottie.url)
+                  .then(response => response.json())
+                  .then(json => {
+                      const data = JSON.stringify(json, null, 2);
+                      const filename = lottie.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+                      downloadFile(data, filename);
+                      showStatus(`${lottie.name} 下载完成！`, 'success');
+                  })
+                  .catch(err => {
+                      showStatus(`下载失败: ${err.message}`, 'error');
+                  });
+          }
+      }
+
+      // 下载文件
+      function downloadFile(data, filename) {
+          const blob = new Blob([data], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+      }
+
+      // 预览Lottie
+      function previewLottie(url) {
+          window.open(url, '_blank');
+      }
+
+      // 复制URL
+      function copyUrl(url) {
+          navigator.clipboard.
